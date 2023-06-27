@@ -5,6 +5,10 @@ terraform {
       source  = "ionos-cloud/ionoscloud"
       version = ">=6.4.0"
     }
+    local = {
+      source  = "local"
+      version = ">=2.4.0"
+    }
   }
 }
 
@@ -77,7 +81,7 @@ resource "ionoscloud_pg_cluster" "example" {
   connections {
     datacenter_id = ionoscloud_datacenter.example.id
     lan_id        = ionoscloud_lan.example.id
-    cidr          = module.ip.result[0]
+    cidr          = module.ip.result_with_cidr[0]
   }
 
   credentials {
@@ -87,7 +91,7 @@ resource "ionoscloud_pg_cluster" "example" {
 }
 
 output "pg_ip" {
-  value = ionoscloud_pg_cluster.example.connections[0].cidr
+  value = module.ip.result[0]
 }
 
 output "pg_password" {
@@ -99,7 +103,13 @@ data "ionoscloud_k8s_cluster" "example" {
   id = ionoscloud_k8s_cluster.example.id
 }
 
-output "kubeconfig" {
-  value     = data.ionoscloud_k8s_cluster.example.kube_config
-  sensitive = true
+resource "local_sensitive_file" "kubeconfig" {
+  content              = data.ionoscloud_k8s_cluster.example.kube_config
+  filename             = pathexpand("~/.kube/${data.ionoscloud_k8s_cluster.example.name}.json")
+  file_permission      = "0600"
+  directory_permission = "0750"
+}
+
+output "kubeconfig_path" {
+  value = local_sensitive_file.kubeconfig.filename
 }
