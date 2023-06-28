@@ -53,7 +53,8 @@ resource "ionoscloud_k8s_node_pool" "example" {
 }
 
 module "ip" {
-  source = "../"
+  source  = "maboehm/kube-lan-ip/ionoscloud"
+  version = ">=0.1.0"
 
   datacenter_id    = ionoscloud_datacenter.example.id
   lan_id           = ionoscloud_lan.example.id
@@ -105,7 +106,7 @@ data "ionoscloud_k8s_cluster" "example" {
 
 resource "local_sensitive_file" "kubeconfig" {
   content              = data.ionoscloud_k8s_cluster.example.kube_config
-  filename             = pathexpand("~/.kube/${data.ionoscloud_k8s_cluster.example.name}.json")
+  filename             = pathexpand("~/.kube/example-cluster.json")
   file_permission      = "0600"
   directory_permission = "0750"
 }

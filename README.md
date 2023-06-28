@@ -11,6 +11,27 @@ more complicated, so this module encapsulates this.
 
 ## Example
 
+```hcl
+module "ip" {
+  source  = "maboehm/kube-lan-ip/ionoscloud"
+  version = ">=0.1.0"
+
+  datacenter_id    = ionoscloud_datacenter.example.id
+  lan_id           = ionoscloud_lan.example.id
+  k8s_cluster_id   = ionoscloud_k8s_cluster.example.id
+  k8s_node_pool_id = ionoscloud_k8s_node_pool.example.id
+}
+
+resource "ionoscloud_pg_cluster" "example" {
+  # incomplete config
+  connections {
+    datacenter_id = ionoscloud_datacenter.example.id
+    lan_id        = ionoscloud_lan.example.id
+    cidr          = module.ip.result_with_cidr[0]
+  }
+}
+```
+
 For a full E2E example, check out the sample [main.tf](./example/main.tf).
 
 After this is applied (takes about 30 minutes), you can do the following to
