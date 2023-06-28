@@ -16,20 +16,40 @@ For a full E2E example, check out the sample [main.tf](./example/main.tf).
 After this is applied (takes about 30 minutes), you can do the following to
 confirm the database can be reached from a pod:
 
-**NOTE:** This exposes your password in the Pod spec, this is NOT recommended
-
 ```shell
 export KUBECONFIG="$(terraform output -raw kubeconfig_path)"
 
-kubectl run -i -t psql-test \
-    --rm \
-    --image=jbergknoff/postgresql-client \
-    --env "PGPASSWORD=$(terraform output -raw pg_password)" \
-    --command psql \
-    -- -U root -h "$(terraform output -raw pg_ip)" postgres
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pg-conntest
+spec:
+  containers:
+  - name: postgresql-client
+    image: jbergknoff/postgresql-client
+    command: ["sleep", "infinity"]
+    envFrom:
+    - secretRef:
+        name: pg-conntest
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pg-conntest
+stringData:
+  PGHOST: $(terraform output -raw pg_ip)
+  PGPASSWORD: $(terraform output -raw pg_password)
+  PGDATABASE: postgres
+  PGUSER: root
+EOF
 
-# you should now have a psql shell open and can run e.g.
-postgres=> \conninfo
-You are connected to database "postgres" as user "root" on host "10.7.222.5" at port "5432".
+kubectl exec -it pg-conntest -- psql                                                                                                                    
+psql (12.3, server 15.3 (Ubuntu 15.3-1.pgdg22.04+1))
+WARNING: psql major version 12, server major version 15.
+         Some psql features might not work.
 SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+postgres=> 
 ```
